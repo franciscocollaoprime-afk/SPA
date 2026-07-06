@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { supabase } from './components/SupAgenda.jsx';
 import './App.css';
+import { dbObtenerContactos, dbAgregarContacto, dbEliminarContacto, dbAgregarDatoContacto, dbEliminarDatoContacto } from './components/CRUD.jsx';
 
 function App() {
   const [contactos, setContactos] = useState([]);
@@ -17,63 +17,57 @@ function App() {
   const [errorGlobal, setErrorGlobal] = useState('');
 
   useEffect(() => {
-    obtenerContactos();
+    cargarAgenda();
   }, []);
 
-  async function obtenerContactos() {
-    try {
-      let { data, error } = await supabase
-        .from('contacto')
-        .select('id_contacto, nombre, apellido, dato_contacto (id_dato_contacto, tipo, correo, telefono, direccion)')
-        .order('nombre', { ascending: true });
-      if (error) throw error;
-      setContactos(data);
-      setErrorGlobal(''); 
-    } catch (error) {
+  // Función auxiliar para refrescar la lista
+  async function cargarAgenda() {
+    const { data, error } = await dbObtenerContactos();
+    if (error) {
       setErrorGlobal('No se pudo conectar con la agenda.');
-    } finally {
-      setCargando(false);
+    } else {
+      setContactos(data);
+      setErrorGlobal('');
     }
+    setCargando(false);
   }
 
-  async function agregarContacto(e) {
+  async function handleAgregarContacto(e) {
     e.preventDefault();
     setErrorContacto(''); 
+
     if (!nombre.trim() || !apellido.trim()) {
       setErrorContacto('Por favor, ingresa tanto el nombre como el apellido.');
       return;
     }
-    try {
-      const { error } = await supabase
-        .from('contacto')
-        .insert([{ nombre, apellido }]);
-      if (error) throw error; 
-      
+
+    // Llamada al CRUD
+    const { error } = await dbAgregarContacto(nombre.trim(), apellido.trim());
+    
+    if (error) {
+      setErrorContacto('Error de base de datos: ' + error.message);
+    } else {
       setNombre('');
       setApellido('');
-      obtenerContactos();
-    } catch (error) {
-      setErrorContacto('Error de base de datos: ' + error.message);
+      cargarAgenda(); // Recarga la lista
     }
   }
 
-  async function eliminarContacto(id_contacto) {
+  async function handleEliminarContacto(id_contacto) {
     if (!window.confirm('¿Seguro que deseas eliminar este contacto y todos sus datos asociados?')) return;
-    try {
-      const { error } = await supabase
-        .from('contacto')
-        .delete()
-        .eq('id_contacto', id_contacto);
-      if (error) throw error;
-      obtenerContactos();
-    } catch (error) {
+    
+    const { error } = await dbEliminarContacto(id_contacto);
+    if (error) {
       alert('Error al eliminar contacto: ' + error.message);
+    } else {
+      cargarAgenda();
     }
   }
 
-  async function agregarDatoContacto(e) {
+  async function handleAgregarDatoContacto(e) {
     e.preventDefault();
     setErrorDato('');
+
     if (!idContactoSeleccionado || isNaN(parseInt(idContactoSeleccionado))) {
       setErrorDato('Debes seleccionar un contacto válido de la lista.');
       return;
@@ -82,60 +76,52 @@ function App() {
       setErrorDato('Debes rellenar al menos un campo (Teléfono, Correo o Dirección).');
       return;
     }
-    try {
-      const { error } = await supabase
-        .from('dato_contacto')
-        .insert([
-          {
-            id_contacto: parseInt(idContactoSeleccionado),
-            tipo,
-            telefono: telefono.trim() || null,
-            correo: correo.trim() || null,
-            direccion: direccion.trim() || null
-          }
-        ]);
-      if (error) throw error;
+
+    // Llamada al CRUD enviando los strings limpios
+    const { error } = await dbAgregarDatoContacto(
+      idContactoSeleccionado,
+      tipo,
+      telefono.trim(),
+      correo.trim(),
+      direccion.trim()
+    );
+
+    if (error) {
+      setErrorDato('Error al agregar datos: ' + error.message);
+    } else {
       setTelefono('');
       setCorreo('');
       setDireccion('');
-      setErrorDato('');
-      obtenerContactos();
-    } catch (error) {
-      setErrorDato('Error al agregar datos: ' + error.message);
+      setIdContactoSeleccionado('');
+      setTipo('Personal');
+      cargarAgenda();
     }
   }
 
-  async function eliminarDatoContacto(id_dato_contacto) {
-    try {
-      const { error } = await supabase
-        .from('dato_contacto')
-        .delete()
-        .eq('id_dato_contacto', id_dato_contacto);
-      if (error) throw error;
-      obtenerContactos();
-    } catch (error) {
+  async function handleEliminarDatoContacto(id_dato_contacto) {
+    const { error } = await dbEliminarDatoContacto(id_dato_contacto);
+    if (error) {
       alert('Error al quitar datos: ' + error.message);
+    } else {
+      cargarAgenda();
     }
   }
+
   if (cargando) return <p className="loading-text">Cargando agenda...</p>;
 
   return (
     <div className="app-container">
       <h1>Agenda de Contactos</h1>
-      {errorGlobal && (
-        <div className="error-global">💥 {errorGlobal}</div>
-      )}
+      {errorGlobal && <div className="error-global">💥 {errorGlobal}</div>}
       <div className="forms-grid">
-        <form onSubmit={agregarContacto} className="form-card">
+        <form onSubmit={handleAgregarContacto} className="form-card">
           <h3>Nuevo Contacto</h3>
           <input type="text" placeholder="Nombre" value={nombre} onChange={(e) => setNombre(e.target.value)} className="input-field"/>
           <input type="text" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} className="input-field"/>
-          {errorContacto && (
-            <div className="error-box">⚠️ {errorContacto}</div>
-            )}
+          {errorContacto && <div className="error-box">⚠️ {errorContacto}</div>}
           <button type="submit" className="btn btn-primary">Guardar Contacto</button>
         </form>
-        <form onSubmit={agregarDatoContacto} className="form-card">
+        <form onSubmit={handleAgregarDatoContacto} className="form-card">
           <h3>Agregar datos</h3>
           <select value={idContactoSeleccionado} onChange={(e) => setIdContactoSeleccionado(e.target.value)} className="input-field">
             <option value=""> Selecciona un Contacto </option>
@@ -151,9 +137,7 @@ function App() {
           <input type="text" placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} className="input-field" />
           <input type="email" placeholder="Correo" value={correo} onChange={(e) => setCorreo(e.target.value)} className="input-field"/>
           <input type="text" placeholder="Dirección" value={direccion} onChange={(e) => setDireccion(e.target.value)} className="input-field"/>
-          {errorDato && (
-            <div className="error-box">⚠️ {errorDato}</div>
-          )}
+          {errorDato && <div className="error-box">⚠️ {errorDato}</div>}
           <button type="submit" className="btn btn-success">Asignar Datos</button>
         </form>
       </div>
@@ -167,7 +151,7 @@ function App() {
             <div key={contacto.id_contacto} className="contact-card">
               <div className="contact-card-header">
                 <h3 className="contact-card-title">{contacto.nombre} {contacto.apellido}</h3>
-                <button onClick={() => eliminarContacto(contacto.id_contacto)} className="btn-danger">Eliminar</button>
+                <button onClick={() => handleEliminarContacto(contacto.id_contacto)} className="btn-danger">Eliminar</button>
               </div>
               <h4 className="subtitle-datos">Sets de datos:</h4>
               {contacto.dato_contacto && contacto.dato_contacto.length > 0 ? (
@@ -180,7 +164,7 @@ function App() {
                         {dato.correo && <div>✉️ {dato.correo}</div>}
                         {dato.direccion && <div>📍 {dato.direccion}</div>}
                       </div>
-                      <button onClick={() => eliminarDatoContacto(dato.id_dato_contacto)} className="btn-link-danger"> (Quitar este set)</button>
+                      <button onClick={() => handleEliminarDatoContacto(dato.id_dato_contacto)} className="btn-link-danger"> (Quitar este set)</button>
                     </li>
                   ))}
                 </ul>
