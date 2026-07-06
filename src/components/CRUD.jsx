@@ -1,98 +1,67 @@
-import { supabase } from "./SupAgenda.jsx";
+import { supabase } from './SupAgenda.jsx'; 
 
-export async function obtenerContactos() {
+export async function dbObtenerContactos() {
     try {
-    let { data, error } = await supabase
+        const { data, error } = await supabase
         .from('contacto')
         .select('id_contacto, nombre, apellido, dato_contacto (id_dato_contacto, tipo, correo, telefono, direccion)')
         .order('nombre', { ascending: true });
-    if (error) throw error;
-    setContactos(data);
-    setErrorGlobal(''); 
+        return { data, error };
     } catch (error) {
-    setErrorGlobal('No se pudo conectar con la agenda.');
-    } finally {
-    setCargando(false);
+        return { data: null, error };
     }
 }
 
-export async function agregarContacto(e) {
-    e.preventDefault();
-    setErrorContacto(''); 
-    if (!nombre.trim() || !apellido.trim()) {
-    setErrorContacto('Por favor, ingresa tanto el nombre como el apellido.');
-    return;
-    }
+export async function dbAgregarContacto(nombre, apellido) {
     try {
-    const { error } = await supabase
+        const { data, error } = await supabase
         .from('contacto')
         .insert([{ nombre, apellido }]);
-    if (error) throw error; 
-    setNombre('');
-    setApellido('');
-    obtenerContactos();
+        return { data, error };
     } catch (error) {
-    setErrorContacto('Error de base de datos: ' + error.message);
+        return { data: null, error };
     }
 }
 
-export async function eliminarContacto(id_contacto) {
-    if (!window.confirm('¿Seguro que deseas eliminar este contacto y todos sus datos asociados?')) return;
+export async function dbEliminarContacto(id_contacto) {
     try {
-    const { error } = await supabase
+        const { data, error } = await supabase
         .from('contacto')
         .delete()
         .eq('id_contacto', id_contacto);
-    if (error) throw error;
-    obtenerContactos();
+        return { data, error };
     } catch (error) {
-    alert('Error al eliminar contacto: ' + error.message);
+        return { data: null, error };
     }
 }
 
-export async function agregarDatoContacto(e) {
-    e.preventDefault();
-    setErrorDato('');
-    if (!idContactoSeleccionado || isNaN(parseInt(idContactoSeleccionado))) {
-    setErrorDato('Debes seleccionar un contacto válido de la lista.');
-    return;
-    }
-    if (!telefono.trim() && !correo.trim() && !direccion.trim()) {
-    setErrorDato('Debes rellenar al menos un campo (Teléfono, Correo o Dirección).');
-    return;
-    }
+export async function dbAgregarDatoContacto(id_contacto, tipo, telefono, correo, direccion) {
     try {
-    const { error } = await supabase
+        const { data, error } = await supabase
         .from('dato_contacto')
         .insert([
-        {
-            id_contacto: parseInt(idContactoSeleccionado),
+            {
+            id_contacto: parseInt(id_contacto),
             tipo,
-            telefono: telefono.trim() || null,
-            correo: correo.trim() || null,
-            direccion: direccion.trim() || null
-        }
+            telefono: telefono || null,
+            correo: correo || null,
+            direccion: direccion || null
+            }
         ]);
-    if (error) throw error;
-    setTelefono('');
-    setCorreo('');
-    setDireccion('');
-    setErrorDato('');
-    obtenerContactos();
+        return { data, error };
     } catch (error) {
-    setErrorDato('Error al agregar datos: ' + error.message);
+        return { data: null, error };
     }
 }
 
-export async function eliminarDatoContacto(id_dato_contacto) {
+export async function dbEliminarDatoContacto(id_dato_contacto) {
     try {
-    const { error } = await supabase
+        const { data, error } = await supabase
         .from('dato_contacto')
         .delete()
         .eq('id_dato_contacto', id_dato_contacto);
-    if (error) throw error;
-    obtenerContactos();
+        return { data, error };
     } catch (error) {
-    alert('Error al quitar datos: ' + error.message);
+    return { data: null, error };
     }
 }
