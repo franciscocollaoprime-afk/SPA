@@ -8,9 +8,11 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout del código
         uses: actions/checkout@v4
+
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
@@ -18,11 +20,13 @@ jobs:
           cache: 'npm'
       - name: Instalar dependencias
         run: npm ci
+
       - name: Compilar proyecto (Inyectando variables de Supabase)
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         run: npm run build
+
       - name: Desplegar a GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
