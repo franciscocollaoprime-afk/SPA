@@ -4,11 +4,21 @@ export async function dbObtenerContactos() {
     try {
         const { data, error } = await supabase
         .from('contacto')
-        .select('id_contacto, nombre, apellido, dato_contacto (id_dato_contacto, tipo, correo, telefono, direccion)')
+        .select(`
+        id_contacto, 
+        nombre, 
+        apellido, 
+        dato_contacto (
+            id_dato_contacto, 
+            tipo, 
+            correo, 
+            telefono, 
+            direccion
+        )`)
         .order('nombre', { ascending: true });
-        return { data, error };
+    return { data, error };
     } catch (error) {
-        return { data: null, error };
+    return { data: null, error };
     }
 }
 
