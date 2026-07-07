@@ -11,7 +11,7 @@ function App() {
   const [correo, setCorreo] = useState('');
   const [direccion, setDireccion] = useState('');
   const [idContactoSeleccionado, setIdContactoSeleccionado] = useState('');
-  const [tipo, setTipo] = useState('Personal');
+  const [tipo, setTipo] = useState('');
   const [errorContacto, setErrorContacto] = useState('');
   const [errorDato, setErrorDato] = useState('');
   const [errorGlobal, setErrorGlobal] = useState('');
@@ -20,7 +20,6 @@ function App() {
     cargarAgenda();
   }, []);
 
-  // Función auxiliar para refrescar la lista
   async function cargarAgenda() {
     const { data, error } = await dbObtenerContactos();
     if (error) {
@@ -41,7 +40,6 @@ function App() {
       return;
     }
 
-    // Llamada al CRUD
     const { error } = await dbAgregarContacto(nombre.trim(), apellido.trim());
     
     if (error) {
@@ -49,7 +47,7 @@ function App() {
     } else {
       setNombre('');
       setApellido('');
-      cargarAgenda(); // Recarga la lista
+      cargarAgenda();
     }
   }
 
@@ -77,7 +75,6 @@ function App() {
       return;
     }
 
-    // Llamada al CRUD enviando los strings limpios
     const { error } = await dbAgregarDatoContacto(
       idContactoSeleccionado,
       tipo,
@@ -129,7 +126,7 @@ function App() {
               <option key={c.id_contacto} value={c.id_contacto}>{c.nombre} {c.apellido}</option>
             ))}
           </select>
-          <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="input-field">
+          <select value={tipo} onChange={(e) => setTipo(e.target.value)} className="input-field" placeholder="Tipo">
             <option value="Personal">Personal</option>
             <option value="Trabajo">Trabajo</option>
             <option value="Casa">Casa</option>
