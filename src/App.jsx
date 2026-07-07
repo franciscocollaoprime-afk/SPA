@@ -11,7 +11,7 @@ function App() {
   const [correo, setCorreo] = useState('');
   const [direccion, setDireccion] = useState('');
   const [idContactoSeleccionado, setIdContactoSeleccionado] = useState('');
-  const [tipo, setTipo] = useState('');
+  const [tipo, setTipo] = useState('Personal');
   const [errorContacto, setErrorContacto] = useState('');
   const [errorDato, setErrorDato] = useState('');
   const [errorGlobal, setErrorGlobal] = useState('');
